@@ -103,4 +103,9 @@ for i, hours in enumerate(window_hours):
             
     window_errors[i] = round(error / count, 2)
 
-print(window_errors)
+with open("../output/example_comparison.txt", mode="w") as f:
+    for window in window_errors:
+        line = "{}".format(window_hours[window][0]) + DELIMITER\
+               + "{}".format(window_hours[window][-1]) + DELIMITER\
+               + "{}".format(window_errors[window]) + "\n"
+        f.write(line)
