@@ -9,22 +9,22 @@ with open("../input/example_window.txt") as f:
             break
 
 actual = []
-with open("../input/example_actual.txt") as f:
+with open("../input/generated_actual.txt") as f:
     for i, line in enumerate(f):
         line = line.strip()
         if line:
             actual.append(line)
 
 predicted = []
-with open("../input/example_predicted.txt") as f:
+with open("../input/generated_predicted.txt") as f:
     for i, line in enumerate(f):
         line = line.strip()
         if line:
             predicted.append(line)
 
-def is_positive_float(s):
-    return s.replace('.','',1).isdigit()
 
+def is_positive_float(s):
+    return s.replace(".", "", 1).isdigit()
 
 
 actual_stock_dict = {}
@@ -85,27 +85,32 @@ window_hours = [
 window_errors = {}
 
 for i, hours in enumerate(window_hours):
-    
+
     error = None
     count = None
-    
+
     for hour in hours:
-        
-        if error is None and count is None:
-            
-            error = hour_errors[hour][0]
-            count = hour_errors[hour][1]
-            
-        else:
-            
-            error += hour_errors[hour][0]
-            count += hour_errors[hour][1]
-            
+        if hour in hour_errors:
+            if error is None and count is None:
+
+                error = hour_errors[hour][0]
+                count = hour_errors[hour][1]
+
+            else:
+
+                error += hour_errors[hour][0]
+                count += hour_errors[hour][1]
+
     window_errors[i] = round(error / count, 2)
 
 with open("../output/example_comparison.txt", mode="w") as f:
     for window in window_errors:
-        line = "{}".format(window_hours[window][0]) + DELIMITER\
-               + "{}".format(window_hours[window][-1]) + DELIMITER\
-               + "{}".format(window_errors[window]) + "\n"
+        line = (
+            "{}".format(window_hours[window][0])
+            + DELIMITER
+            + "{}".format(window_hours[window][-1])
+            + DELIMITER
+            + "{:.2f}".format(window_errors[window])
+            + "\n"
+        )
         f.write(line)
