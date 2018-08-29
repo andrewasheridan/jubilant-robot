@@ -1,22 +1,23 @@
-
-from argparse import ArgumentParser
+#  _           _       _     _   
+# (_)         (_)     | |   | |  
+#  _ _ __  ___ _  __ _| |__ | |_ 
+# | | '_ \/ __| |/ _` | '_ \| __|
+# | | | | \__ \ | (_| | | | | |_ 
+# |_|_| |_|___/_|\__, |_| |_|\__|
+#                 __/ |          
+#                |___/   
 from itertools import zip_longest
-
-parser = ArgumentParser()
-parser.add_argument("filepaths", nargs="*", help="paths to files")
-
-args = parser.parse_args()
-filepaths = args.filepaths
-
-window_fn = filepaths[0]  # "./input/window.txt"
-actual_fn = filepaths[1]  # "./input/actual.txt"
-predicted_fn = filepaths[2]  # "./input/predicted.txt"
-output_fn = filepaths[3]  # "./output/comparison.txt"
 
 DELIMITER = "|"
 VALS_PER_LINE = 3
 
-
+###############################################################################
+#   __                           _   
+#  / _|                         | |  
+# | |_ ___  _ __ _ __ ___   __ _| |_ 
+# |  _/ _ \| '__| '_ ` _ \ / _` | __|
+# | || (_) | |  | | | | | | (_| | |_ 
+# |_| \___/|_|  |_| |_| |_|\__,_|\__|                               
 def split(line, delimiter=DELIMITER):
     """splist line at delimiter
     
@@ -29,15 +30,10 @@ def split(line, delimiter=DELIMITER):
     
     Raises:
         ValueError: Exception if split fails for any reason
-        ValueError: Exception if too many delimiters
     """
-    try:
-        line = line.split(delimiter)
-    except:
+    line = line.split(delimiter)
+    if len(line) != VALS_PER_LINE:
         raise ValueError("Split failed for unknown reason, wrong delimiter?")
-
-    if len(line) > VALS_PER_LINE:
-        raise ValueError("line had too many delimiters")
     else:
         return line
 
@@ -54,7 +50,7 @@ def str_to_int(s):
     Raises:
         ValueError: Exception if s cannot be interpreted as integer
     """
-
+    s = s.replace("_", "")
     if s.isdigit():
         s = int(s)
         return s
@@ -80,6 +76,7 @@ def get_price(s):
     if s[0] == "-":
         sign = -1
         s = s[1:]
+    s = s.replace("_", "")
     if s.replace(".", "", 1).isdigit():
         s = sign * float(s)
         return s
@@ -104,6 +101,22 @@ def format_line(line):
     line[2] = get_price(line[2])
 
     return line
+
+
+###############################################################################                                   
+#  _ __  _ __ ___   ___ ___  ___ ___ 
+# | '_ \| '__/ _ \ / __/ _ \/ __/ __|
+# | |_) | | | (_) | (_|  __/\__ \__ \
+# | .__/|_|  \___/ \___\___||___/___/
+# | |                                
+# |_|                                
+def add_stockline_to_dict(d, hour, stock, price):
+
+    # add actual line to dict
+    if stock not in d:
+        d[stock] = {hour: price}
+    else:
+        d[stock][hour] = price
 
 
 def get_hour_error(actual, predicted, current_hour):
@@ -186,11 +199,7 @@ def process_input(fn_actual, fn_predicted):
                 if current_hour is None:
                     current_hour = actual_hour
 
-                # add actual line to dict
-                if actual_stock not in actual:
-                    actual[actual_stock] = {actual_hour: actual_price}
-                else:
-                    actual[actual_stock][actual_hour] = actual_price
+                add_stockline_to_dict(actual, actual_hour, actual_stock, actual_price)
 
             # likely that f_predicted is shorter than f_actual so check for line before stripping
             predicted_line = predicted_line.strip() if predicted_line else None
@@ -201,11 +210,9 @@ def process_input(fn_actual, fn_predicted):
                     predicted_line
                 )
 
-                # add predicted line to dict
-                if predicted_stock not in predicted:
-                    predicted[predicted_stock] = {predicted_hour: predicted_price}
-                else:
-                    predicted[predicted_stock][predicted_hour] = predicted_price
+                add_stockline_to_dict(
+                    predicted, predicted_hour, predicted_stock, predicted_price
+                )
 
             # process data on hour switch
             if actual_hour > current_hour:
@@ -229,6 +236,29 @@ def process_input(fn_actual, fn_predicted):
 
     return hour_errors
 
+###############################################################################
+#              _               _   
+#             | |             | |  
+#   ___  _   _| |_ _ __  _   _| |_ 
+#  / _ \| | | | __| '_ \| | | | __|
+# | (_) | |_| | |_| |_) | |_| | |_ 
+#  \___/ \__,_|\__| .__/ \__,_|\__|
+#                 | |              
+#                 |_|             
+def get_window(window_fn):
+    window = None
+    with open(window_fn) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                window = str_to_int(line)
+                break
+
+    if window is not None:
+        return window
+    else:
+        raise ValueError("Bad window")
+
 
 def get_window_intervals(window, hour_errors):
     """get all the window intervals for a given window  size and range of hours
@@ -241,6 +271,9 @@ def get_window_intervals(window, hour_errors):
     Returns:
         list of range(): window intervals
     """
+    # window of zero doesnt make sense
+    if window == 0:
+        raise ValueError("Window cannot be 0")
     hours = hour_errors.keys()
     max_hour = max(hours)
     min_hour = min(hours)
@@ -276,6 +309,7 @@ def get_interval_errors(window_intervals, hour_errors):
 
         for hour in hours:
             if hour in hour_errors:
+
                 error += hour_errors[hour][0]
                 count += hour_errors[hour][1]
 
@@ -296,7 +330,7 @@ def format_interval_error(error, interval):
     Returns:
         str: interval error formatted for writing
     """
-    if isinstance(error, float):
+    if isinstance(error, float) or isinstance(error, int):
         error_str = "{:.2f}".format(error)
 
     else:
@@ -331,26 +365,3 @@ def generate_output(window_intervals, window_errors, output_fn):
             line = format_interval_error(error, interval)
 
             f.write(line)
-
-
-def get_window(window_fn):
-    window = None
-    with open(window_fn) as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                window = str_to_int(line)
-                break
-
-    if window is not None:
-        return window
-    else:
-        raise ValueError("Bad window")
-
-
-window = get_window(window_fn)
-hour_errors = process_input(actual_fn, predicted_fn)
-window_intervals = get_window_intervals(window, hour_errors)
-window_errors = get_interval_errors(window_intervals, hour_errors)
-generate_output(window_intervals, window_errors, output_fn)
-
